@@ -9,5 +9,3 @@ type Admin struct {
 	PasswordHash string `json:"-"`
 	StoreName    string `json:"store_name"`
 }
-
-
