@@ -1,12 +1,19 @@
 package utils
 
 import (
+	"os"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 )
 
-var jwtKey = []byte("your_secret_key") // need to mmove to env
+// var jwtKey = []byte("your_secret_key") // need to mmove to env
+// utils/jwt.go
+var jwtKey = []byte(os.Getenv("JWT_SECRET"))
+
+func JwtKey() []byte {
+	return jwtKey
+}
 
 type Claims struct {
 	AdminID uint
