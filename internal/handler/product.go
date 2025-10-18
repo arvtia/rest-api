@@ -28,4 +28,19 @@ func CreateProduct(db *gorm.DB) gin.HandlerFunc {
 	}
 }
 
-// 
+// list products
+func ListProducts(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		adminID := c.GetUint("adminID")
+
+		var products []model.Product
+		if err := db.Where("admin_id = ?", adminID).Find(&products).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not fetch products"})
+			return
+		}
+
+		c.JSON(http.StatusOK, products)
+	}
+}
+
+
