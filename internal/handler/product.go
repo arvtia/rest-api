@@ -43,4 +43,24 @@ func ListProducts(db *gorm.DB) gin.HandlerFunc {
 	}
 }
 
+func UpdateProduct(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		adminID := c.GetUint("adminID")
+		productID := c.Param("id")
 
+		var product model.Product
+		if err := db.Where("id = ? AND admin_id = ?", productID, adminID).First(&product).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Product not found"})
+			return
+		}
+
+		var input model.Product
+		if err := c.ShouldBindJSON(&input); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
+			return
+		}
+
+		db.Model(&product).Updates(input)
+		c.JSON(http.StatusOK, product)
+	}
+}
