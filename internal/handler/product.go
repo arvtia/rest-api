@@ -64,3 +64,20 @@ func UpdateProduct(db *gorm.DB) gin.HandlerFunc {
 		c.JSON(http.StatusOK, product)
 	}
 }
+
+// delete product
+func DeleteProduct(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		adminID := c.GetUint("adminID")
+		productID := c.Param("id")
+
+		var product model.Product
+		if err := db.Where("id = ? AND admin_id = ?", productID, adminID).First(&product).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Product not Found"})
+			return
+		}
+
+		db.Delete(&product)
+		c.JSON(http.StatusOK, gin.H{"message": "Product deleted"})
+	}
+}
