@@ -1,14 +1,22 @@
 package main
 
 import (
+	"log"
+
 	"github.com/arvtia/rest-api/internal/config"
 	"github.com/arvtia/rest-api/internal/handler"
 	"github.com/arvtia/rest-api/internal/middleware"
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 )
 
 func main() {
 	// initialize DB
+
+	// Load .env file before anything else
+	if err := godotenv.Load(); err != nil {
+		log.Fatal("Error loading .env file")
+	}
 
 	db := config.InitDB()
 
