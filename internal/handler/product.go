@@ -160,3 +160,16 @@ func DeleteProduct(db *gorm.DB) gin.HandlerFunc {
 		c.JSON(http.StatusOK, gin.H{"message": "Product deleted"})
 	}
 }
+
+// list all products - for user
+
+func ListAllProducts(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var products []model.Product
+		if err := db.Preload("Media").Find(&products).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not fetch products"})
+			return
+		}
+		c.JSON(http.StatusOK, products)
+	}
+}

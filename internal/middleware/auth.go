@@ -16,19 +16,27 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		tokenStr := authHeader
-		if strings.HasPrefix(authHeader, "Bearer ") {
-			tokenStr = strings.TrimPrefix(authHeader, "Bearer ")
-		}
-
+		tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
 		claims, err := utils.ParseJWT(tokenStr)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired token"})
 			return
 		}
 
-		c.Set("adminID", claims.AdminID)
-		c.Set("adminEmail", claims.Email)
+		switch claims.Role {
+		case "admin":
+			c.Set("adminID", claims.AdminID)
+			c.Set("adminEmail", claims.Email)
+			c.Set("role", "admin")
+		case "user":
+			c.Set("userID", claims.UserID)
+			c.Set("userEmail", claims.Email)
+			c.Set("role", "user")
+		default:
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unknown role"})
+			return
+		}
+
 		c.Next()
 	}
 }

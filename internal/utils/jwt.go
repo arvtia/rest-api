@@ -5,12 +5,15 @@ import (
 	"fmt"
 	"os"
 	"time"
+
 	"github.com/golang-jwt/jwt/v5"
 )
 
 type Claims struct {
-	AdminID uint   `json:"admin_id"`
+	AdminID uint   `json:"admin_id,omitempty"`
+	UserID  uint   `json:"user_id,omitempty"`
 	Email   string `json:"email"`
+	Role    string `json:"role"` // "admin" or "user"
 	jwt.RegisteredClaims
 }
 
@@ -22,28 +25,30 @@ func getSecret() (string, error) {
 	return secret, nil
 }
 
-func GenerateJWT(adminID uint, email string) (string, error) {
+func GenerateJWT(id uint, email, role string) (string, error) {
 	secret, err := getSecret()
 	if err != nil {
 		return "", err
 	}
 
 	claims := Claims{
-		AdminID: adminID,
-		Email:   email,
+		Email: email,
+		Role:  role,
 		RegisteredClaims: jwt.RegisteredClaims{
-			Subject:   fmt.Sprint(adminID),
+			Subject:   fmt.Sprint(id),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(72 * time.Hour)),
 		},
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	signed, err := token.SignedString([]byte(secret))
-	if err != nil {
-		return "", err
+	if role == "admin" {
+		claims.AdminID = id
+	} else {
+		claims.UserID = id
 	}
-	return signed, nil
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString([]byte(secret))
 }
 
 func ParseJWT(tokenStr string) (*Claims, error) {

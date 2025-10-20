@@ -47,15 +47,17 @@ func Signup(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		token, err := utils.GenerateJWT(admin.ID, admin.Email)
+		token, err := utils.GenerateJWT(admin.ID, admin.Email, "admin")
 		if err != nil {
 			log.Println("JWT signup generation error:", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create token"})
 			return
 		}
 
-		log.Println("JWT (signup):", token)
-		c.JSON(http.StatusCreated, gin.H{"message": "Admin created", "token": token})
+		c.JSON(http.StatusCreated, gin.H{
+			"message": "Admin created",
+			"token":   token,
+		})
 	}
 }
 
@@ -85,14 +87,13 @@ func Login(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		token, err := utils.GenerateJWT(admin.ID, admin.Email)
+		token, err := utils.GenerateJWT(admin.ID, admin.Email, "admin")
 		if err != nil {
 			log.Println("JWT login generation error:", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create token"})
 			return
 		}
 
-		log.Println("JWT (login):", token)
 		c.JSON(http.StatusOK, gin.H{"token": token})
 	}
 }

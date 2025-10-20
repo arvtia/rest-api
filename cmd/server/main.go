@@ -22,9 +22,9 @@ func main() {
 	}
 
 	db := config.InitDB()
-
 	r := gin.Default()
 
+	// CORS setup
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"http://localhost:3000", "https://your-frontend.com"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
@@ -34,20 +34,34 @@ func main() {
 		MaxAge:           12 * time.Hour,
 	}))
 
+	// Public routes
 	r.POST("/admin/signup", handler.Signup(db))
 	r.POST("/admin/login", handler.Login(db))
+	r.POST("/signup", handler.UserSignup(db))
+	r.POST("/login", handler.UserLogin(db))
 
-	auth := r.Group("/admin")
-	auth.Use(middleware.AuthMiddleware())
+	// Protected admin routes
+	admin := r.Group("/admin")
+	admin.Use(middleware.AuthMiddleware())
 	{
-		auth.POST("/products", handler.CreateProduct(db))
-		auth.GET("/products", handler.ListProducts(db))
-		auth.PUT("/products/:id", handler.UpdateProduct(db))
-		auth.DELETE("/products/:id", handler.DeleteProduct(db))
-		auth.POST("/products/:id/media", handler.UploadProductImage(db))
-		auth.POST("/products/form", handler.CreateProductWithMedia(db))
+		admin.POST("/products", handler.CreateProduct(db))
+		admin.GET("/products", handler.ListProducts(db))
+		admin.PUT("/products/:id", handler.UpdateProduct(db))
+		admin.DELETE("/products/:id", handler.DeleteProduct(db))
+		admin.POST("/products/:id/media", handler.UploadProductImage(db))
+		admin.POST("/products/form", handler.CreateProductWithMedia(db))
 	}
 
+	// Protected user routes
+	user := r.Group("/user")
+	user.Use(middleware.AuthMiddleware())
+	{
+		user.GET("/details", handler.GetUserDetails(db))
+		user.POST("/details", handler.UpdateUserDetails(db))
+		// Add cart, orders, payments here later
+	}
+
+	// Start server
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
