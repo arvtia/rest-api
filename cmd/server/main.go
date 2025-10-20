@@ -44,6 +44,8 @@ func main() {
 		auth.GET("/products", handler.ListProducts(db))
 		auth.PUT("/products/:id", handler.UpdateProduct(db))
 		auth.DELETE("/products/:id", handler.DeleteProduct(db))
+		auth.POST("/products/:id/media", handler.UploadProductImage(db))
+		auth.POST("/products/form", handler.CreateProductWithMedia(db))
 	}
 
 	port := os.Getenv("PORT")
