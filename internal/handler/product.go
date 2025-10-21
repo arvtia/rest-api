@@ -14,6 +14,7 @@ import (
 	"gorm.io/gorm"
 )
 
+// create products
 func CreateProduct(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		adminID := c.GetUint("adminID")
@@ -34,16 +35,34 @@ func CreateProduct(db *gorm.DB) gin.HandlerFunc {
 	}
 }
 
+// upload with images
 func CreateProductWithMedia(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		adminID := c.GetUint("adminID")
 
-		// Parse form fields
+		// Parse form fields with validation
 		name := c.PostForm("name")
 		description := c.PostForm("description")
-		price, _ := strconv.ParseFloat(c.PostForm("price"), 64)
-		stock, _ := strconv.Atoi(c.PostForm("stock"))
+		priceStr := c.PostForm("price")
+		stockStr := c.PostForm("stock")
 		category := c.PostForm("category")
+
+		if name == "" || priceStr == "" || stockStr == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Missing required fields"})
+			return
+		}
+
+		price, err := strconv.ParseFloat(priceStr, 64)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid price format"})
+			return
+		}
+
+		stock, err := strconv.Atoi(stockStr)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid stock format"})
+			return
+		}
 
 		product := model.Product{
 			Name:        name,
@@ -76,7 +95,10 @@ func CreateProductWithMedia(db *gorm.DB) gin.HandlerFunc {
 
 			var mediaRecords []model.ProductMedia
 			for i, file := range files {
-				src, _ := file.Open()
+				src, err := file.Open()
+				if err != nil {
+					continue
+				}
 				defer src.Close()
 
 				uploadResp, err := cld.Upload.Upload(context.Background(), src, uploader.UploadParams{
@@ -84,7 +106,7 @@ func CreateProductWithMedia(db *gorm.DB) gin.HandlerFunc {
 					PublicID: fmt.Sprintf("product_%d_img_%d", product.ID, i),
 				})
 				if err != nil {
-					continue // skip failed uploads
+					continue
 				}
 
 				mediaRecords = append(mediaRecords, model.ProductMedia{
@@ -96,32 +118,43 @@ func CreateProductWithMedia(db *gorm.DB) gin.HandlerFunc {
 			}
 
 			if len(mediaRecords) > 0 {
-				db.Create(&mediaRecords)
+				if err := db.Create(&mediaRecords).Error; err != nil {
+					c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save media"})
+					return
+				}
+				// Attach media to product for response
+				product.Media = mediaRecords
 			}
 		}
 
 		c.JSON(http.StatusCreated, gin.H{
 			"product": product,
-			"media":   len(files),
 		})
 	}
 }
 
-// list products
+// fething the products list
 func ListProducts(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		adminID := c.GetUint("adminID")
 
 		var products []model.Product
-		if err := db.Where("admin_id = ?", adminID).Find(&products).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not fetch products"})
+		if err := db.Preload("Media").Where("admin_id = ?", adminID).Find(&products).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error":   "Could not fetch products",
+				"details": err.Error(),
+			})
 			return
 		}
 
-		c.JSON(http.StatusOK, products)
+		c.JSON(http.StatusOK, gin.H{
+			"products": products,
+			"count":    len(products),
+		})
 	}
 }
 
+// update products
 func UpdateProduct(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		adminID := c.GetUint("adminID")
@@ -162,7 +195,6 @@ func DeleteProduct(db *gorm.DB) gin.HandlerFunc {
 }
 
 // list all products - for user
-
 func ListAllProducts(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var products []model.Product

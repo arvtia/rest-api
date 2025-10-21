@@ -48,11 +48,10 @@ func main() {
 		admin.GET("/products", handler.ListProducts(db))
 		admin.PUT("/products/:id", handler.UpdateProduct(db))
 		admin.DELETE("/products/:id", handler.DeleteProduct(db))
-		admin.POST("/products/:id/media", handler.UploadProductImage(db))
 		admin.POST("/products/form", handler.CreateProductWithMedia(db))
 	}
 	// public route
-	r.GET("/products", handler.ListAllProducts(db))
+	r.GET("/products/public", handler.ListAllProducts(db))
 
 	// Protected user routes
 	user := r.Group("/user")
