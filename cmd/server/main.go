@@ -51,6 +51,8 @@ func main() {
 		admin.POST("/products/:id/media", handler.UploadProductImage(db))
 		admin.POST("/products/form", handler.CreateProductWithMedia(db))
 	}
+	// public route
+	r.GET("/products", handler.ListAllProducts(db))
 
 	// Protected user routes
 	user := r.Group("/user")
